@@ -345,8 +345,8 @@ const Relatorios = () => {
       doc.setFontSize(12);
       doc.text(`Mês de Referência: ${monthLabel} ${year}`, pageWidth / 2, 30, { align: "center" });
       
-      // Draw red projected earnings box
-      drawProjectedEarningsBox(paymentReportData.projectedEarnings, 15);
+      // Draw red projected earnings box (aligned with "Total em Notas" at y=45)
+      drawProjectedEarningsBox(paymentReportData.projectedEarnings, 40);
       
       doc.setFontSize(10);
       doc.text(`Total em Notas: € ${paymentReportData.invoicesTotal.toFixed(2)}`, 14, 45);
@@ -389,8 +389,8 @@ const Relatorios = () => {
       doc.setFontSize(12);
       doc.text(`Período: ${format(new Date(startDate), "dd/MM/yyyy")} a ${format(new Date(endDate), "dd/MM/yyyy")}`, pageWidth / 2, 30, { align: "center" });
       
-      // Draw red projected earnings box
-      drawProjectedEarningsBox(projectedEarnings, 15);
+      // Draw red projected earnings box (aligned with "Total de Notas" at y=45)
+      drawProjectedEarningsBox(projectedEarnings, 40);
       
       doc.setFontSize(10);
       doc.text(`Total de Notas: ${reportData.totalInvoiceCount + reportData.totalManualCount}`, 14, 45);
