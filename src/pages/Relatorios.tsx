@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Plus, Euro, Download, Phone, User, CreditCard, Calendar, ChevronRight, Image, ExternalLink, Share2, Copy, Check, Loader2 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 interface ReportData {
@@ -90,6 +91,8 @@ const Relatorios = () => {
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shareDays, setShareDays] = useState("30");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const months = [
@@ -558,6 +561,12 @@ const Relatorios = () => {
     setCopied(false);
   };
 
+  const openShareDialog = () => {
+    setShareDialogOpen(true);
+    setShareUrl(null);
+    setCopied(false);
+  };
+
   const shareReport = async () => {
     if (!selectedReportType) return;
     
@@ -596,6 +605,8 @@ const Relatorios = () => {
         return;
       }
 
+      const expiresAt = addDays(new Date(), parseInt(shareDays));
+
       const { data, error } = await supabase
         .from("shared_reports")
         .insert({
@@ -603,6 +614,7 @@ const Relatorios = () => {
           report_type: selectedReportType,
           report_title: reportTitle,
           report_data: reportDataToShare,
+          expires_at: expiresAt.toISOString(),
         })
         .select()
         .single();
@@ -614,7 +626,7 @@ const Relatorios = () => {
 
       toast({
         title: "Link criado!",
-        description: "O link do relatório foi gerado. Válido por 30 dias.",
+        description: `O link do relatório foi gerado. Válido por ${shareDays} dias.`,
       });
     } catch (error) {
       console.error("Error sharing report:", error);
@@ -753,28 +765,11 @@ const Relatorios = () => {
                   Exportar para PDF
                 </Button>
                 
-                <Button onClick={shareReport} variant="outline" className="w-full" disabled={isSharing}>
-                  {isSharing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Share2 className="h-4 w-4 mr-2" />
-                  )}
-                  {isSharing ? "Gerando link..." : "Gerar Link para Compartilhar"}
+                <Button onClick={openShareDialog} variant="outline" className="w-full">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Gerar Link para Compartilhar
                 </Button>
 
-                {shareUrl && (
-                  <div className="flex gap-2 items-center p-3 bg-muted rounded-lg">
-                    <input
-                      type="text"
-                      value={shareUrl}
-                      readOnly
-                      className="flex-1 bg-transparent text-sm outline-none truncate"
-                    />
-                    <Button size="sm" variant="ghost" onClick={copyShareUrl}>
-                      {copied ? <Check className="h-4 w-4 text-bonus" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -855,29 +850,12 @@ const Relatorios = () => {
                 Exportar para PDF
               </Button>
               
-              <Button onClick={shareReport} variant="outline" className="flex-1" disabled={isSharing}>
-                {isSharing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Share2 className="h-4 w-4 mr-2" />
-                )}
-                {isSharing ? "Gerando..." : "Gerar Link"}
+              <Button onClick={openShareDialog} variant="outline" className="flex-1">
+                <Share2 className="h-4 w-4 mr-2" />
+                Gerar Link
               </Button>
             </div>
 
-            {shareUrl && (
-              <div className="flex gap-2 items-center p-3 bg-muted rounded-lg mb-4">
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 bg-transparent text-sm outline-none truncate"
-                />
-                <Button size="sm" variant="ghost" onClick={copyShareUrl}>
-                  {copied ? <Check className="h-4 w-4 text-bonus" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            )}
 
             <div className="border rounded-lg p-4 max-h-96 overflow-auto">
               {selectedReportType === "complete" && (
@@ -1204,6 +1182,70 @@ const Relatorios = () => {
             <Button onClick={generatePaymentByMonthReport} className="w-full">
               Gerar Relatório
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Compartilhar Relatório</DialogTitle>
+            <DialogDescription>
+              Escolha por quantos dias o link ficará ativo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Validade do Link</Label>
+              <Select value={shareDays} onValueChange={setShareDays}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 dia</SelectItem>
+                  <SelectItem value="3">3 dias</SelectItem>
+                  <SelectItem value="7">7 dias</SelectItem>
+                  <SelectItem value="14">14 dias</SelectItem>
+                  <SelectItem value="30">30 dias</SelectItem>
+                  <SelectItem value="60">60 dias</SelectItem>
+                  <SelectItem value="90">90 dias</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {shareUrl ? (
+              <div className="space-y-3">
+                <div className="flex gap-2 items-center p-3 bg-muted rounded-lg">
+                  <input
+                    type="text"
+                    value={shareUrl}
+                    readOnly
+                    className="flex-1 bg-transparent text-sm outline-none truncate"
+                  />
+                  <Button size="sm" variant="ghost" onClick={copyShareUrl}>
+                    {copied ? <Check className="h-4 w-4 text-bonus" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Link válido por {shareDays} dias. Gerencie seus links em "Links".
+                </p>
+              </div>
+            ) : (
+              <Button onClick={shareReport} className="w-full" disabled={isSharing}>
+                {isSharing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Gerando link...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Gerar Link
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
