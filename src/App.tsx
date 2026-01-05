@@ -14,6 +14,7 @@ import Backup from "./pages/Backup";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SharedReport from "./pages/SharedReport";
+import LinksCompartilhados from "./pages/LinksCompartilhados";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route element={<Layout><NotasFiscais /></Layout>} path="/notas-fiscais" />
           <Route element={<Layout><Receitas /></Layout>} path="/receitas" />
           <Route element={<Layout><Relatorios /></Layout>} path="/relatorios" />
+          <Route element={<Layout><LinksCompartilhados /></Layout>} path="/links" />
           <Route element={<Layout><Backup /></Layout>} path="/backup" />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route element={<Layout><NotFound /></Layout>} path="*" />
